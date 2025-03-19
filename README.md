@@ -46,7 +46,5 @@ This project is open-source and available under the MIT License.
 ## 🤝 Contributing
 Feel free to fork the repository and submit pull requests with improvements or new features!
 
----
 
-Made with ❤️ for fitness enthusiasts!
 
