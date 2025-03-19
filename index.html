@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏋️ Workout Timer</title>
+    <style>
+        body {
+            background-color: #222;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+
+        .config {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .config label {
+            font-size: 14px;
+            width: 100px;
+            text-align: right;
+        }
+
+        .config input {
+            width: 50px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .controls {
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        button {
+            font-size: 18px;
+            padding: 10px 25px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: opacity 0.3s;
+        }
+
+        #startBtn { background-color: #28a745; }
+        #pauseBtn { background-color: #ffc107; color: black; }
+        #stopBtn { background-color: #dc3545; }
+        button:hover { opacity: 0.85; }
+
+        #output_time {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 30px 0;
+        }
+
+        .phase_name {
+            font-size: 25px;
+            color: #17a2b8;
+            margin-bottom: 10px;
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 300px;
+            height: 10px;
+            background: gray;
+            border-radius: 5px;
+            margin: 10px auto;
+            overflow: hidden;
+        }
+
+        #progressBar {
+            height: 100%;
+            width: 0%;
+            background: limegreen;
+            transition: width 1s linear;
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            color: black;
+            padding: 20px;
+            border: 2px solid black;
+            z-index: 1000;
+            font-size: 20px;
+            text-align: center;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏋️ Workout Timer</h1>
+
+    <div class="config">
+        <label>Warm-up:</label>
+        <input type="number" id="warmup" value="5" min="0">
+        <label>Stations:</label>
+        <input type="number" id="stations" value="3" min="1">
+        <label>Sets:</label>
+        <input type="number" id="sets" value="3" min="1">
+        <label>Work (s):</label>
+        <input type="number" id="workTime" value="7" min="1">
+        <label>Rest (s):</label>
+        <input type="number" id="restTime" value="7" min="0">
+    </div>
+
+    <div class="phase_name">Not started yet!</div>
+    <div id="totalTime" style="font-size: 20px; margin-bottom: 10px; color: #f8c102;">
+        Total Time: 00:00
+    </div>
+
+    <div class="progress-container">
+        <div id="progressBar"></div>
+    </div>
+
+    <div class="controls">
+        <button id="startBtn" onclick="startWorkout()">Start</button>
+        <button id="pauseBtn" onclick="pauseWorkout()" disabled>Pause</button>
+        <button id="stopBtn" onclick="stopWorkout()" disabled>Stop</button>
+    </div>
+
+    <audio id="beep">
+        <source src="clank.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="popup" class="popup">Workout Finished!</div>
+
+    <script>
+        let timerInterval;
+        let timeLeft = 0;
+        let isPaused = false;
+        let currentPhaseIndex = 0;
+        let phaseElement = document.querySelector('.phase_name');
+        let progressBar = document.getElementById('progressBar');
+        let audio = document.getElementById("beep");
+        let phaseTimeLeft = 0;
+        let phaseDuration = 0;
+        let phases = [];
+
+        function updateConfig() {
+            const warmup = parseInt(document.getElementById('warmup').value) || 0;
+            const stations = parseInt(document.getElementById('stations').value) || 1;
+            const sets = parseInt(document.getElementById('sets').value) || 1;
+            const workTime = parseInt(document.getElementById('workTime').value) || 1;
+            const restTime = parseInt(document.getElementById('restTime').value) || 1;
+
+            phases = [];
+
+            // Add warm-up phase
+            if (warmup > 0) {
+                phases.push({ name: "🔥 Warm-up", duration: warmup * 60 });
+                phases.push({ name: "😌 Rest", duration: restTime }); // Add rest after warm-up
+            }
+
+            // Loop through sets and stations
+            for (let set = 1; set <= sets; set++) {
+                for (let station = 1; station <= stations; station++) {
+                    phases.push({ name: `💪 Station ${station} (Work)`, duration: workTime });
+
+                    // Add rest after work, except at the last station of the last set
+                    if (station < stations || set < sets) {
+                        phases.push({ name: "😌 Rest", duration: restTime });
+                    }
+                }
+            }
+
+            timeLeft = phases.reduce((sum, phase) => sum + phase.duration, 0);
+            displayTime(timeLeft);
+        }
+
+
+        function displayTime(seconds) {
+            const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const secs = (seconds % 60).toString().padStart(2, '0');
+            document.getElementById('totalTime').textContent = `Total Time: ${minutes}:${secs}`;
+        }
+
+        function startWorkout() {
+            updateConfig();
+            if (phases.length === 0) return;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = false;
+            isPaused = false;
+            currentPhaseIndex = 0;
+            switchPhase();
+            timerInterval = setInterval(updateTime, 1000);
+        }
+
+        function updateTime() {
+            if (isPaused || currentPhaseIndex >= phases.length) return;
+
+            phaseTimeLeft--;
+            timeLeft--;
+
+            if (phaseTimeLeft <= 0) {
+                currentPhaseIndex++;
+                if (currentPhaseIndex < phases.length) {
+                    switchPhase();
+                } else {
+                    stopWorkout();
+                }
+            }
+
+            updateProgressBar();
+            displayTime(timeLeft);
+        }
+
+        function switchPhase() {
+            if (currentPhaseIndex >= phases.length) {
+                stopWorkout();
+                return;
+            }
+
+            const phase = phases[currentPhaseIndex];
+            phaseElement.textContent = phase.name;
+            phaseTimeLeft = phase.duration;
+            phaseDuration = phase.duration;
+            updateProgressBar();
+            audio.currentTime = 0;
+            audio.play().catch(err => console.log("Audio play blocked:", err));
+        }
+
+        function updateProgressBar() {
+            const progress = ((phaseDuration - phaseTimeLeft) / phaseDuration) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function pauseWorkout() {
+            isPaused = !isPaused;
+            document.getElementById('pauseBtn').textContent = isPaused ? "Resume" : "Pause";
+        }
+
+        function stopWorkout() {
+            clearInterval(timerInterval);
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            phaseElement.textContent = "Workout Finished!";
+            progressBar.style.width = "0%";
+            document.getElementById("popup").style.display = "block";
+            setTimeout(() => document.getElementById("popup").style.display = "none", 2000);
+        }
+
+        // Ensure total time is calculated correctly on page load
+        document.addEventListener("DOMContentLoaded", () => {
+            updateConfig();
+        });
+
+        // Update total time when any input changes
+        document.querySelectorAll('.config input').forEach(input => {
+            input.addEventListener('input', updateConfig);
+        });
+    </script>
+
+
+</body>
+</html>

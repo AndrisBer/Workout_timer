@@ -1,0 +1,93 @@
+body {
+    background-color: #222;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding-top: 50px;
+}
+
+.config {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.config label {
+    font-size: 14px;
+    width: 100px;
+    text-align: right;
+}
+
+.config input {
+    width: 50px;
+    font-size: 16px;
+    text-align: center;
+}
+
+.controls {
+    margin: 20px auto;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+button {
+    font-size: 18px;
+    padding: 10px 25px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: opacity 0.3s;
+}
+
+#startBtn { background-color: #28a745; }
+#pauseBtn { background-color: #ffc107; color: black; }
+#stopBtn { background-color: #dc3545; }
+button:hover { opacity: 0.85; }
+
+#output_time {
+    font-size: 48px;
+    font-weight: bold;
+    margin: 30px 0;
+}
+
+.phase_name {
+    font-size: 25px;
+    color: #17a2b8;
+    margin-bottom: 10px;
+}
+
+.progress-container {
+    width: 100%;
+    max-width: 300px;
+    height: 10px;
+    background: gray;
+    border-radius: 5px;
+    margin: 10px auto;
+    overflow: hidden;
+}
+
+#progressBar {
+    height: 100%;
+    width: 0%;
+    background: limegreen;
+    transition: width 1s linear;
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    color: black;
+    padding: 20px;
+    border: 2px solid black;
+    z-index: 1000;
+    font-size: 20px;
+    text-align: center;
+    border-radius: 10px;
+}
